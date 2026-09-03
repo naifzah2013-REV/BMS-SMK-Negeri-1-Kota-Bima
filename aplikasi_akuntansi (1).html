@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Akuntansi & Bank Mini Syariah - SMK NEGERI 1 KOTA BIMA</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            green: '#046A38',
+                            hover: '#03522b',
+                            orange: '#E67E00',
+                            orangeHover: '#c46b00',
+                            bg: '#F0FDF4',
+                            border: '#BBF7D0',
+                            text: '#064E3B'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Pustaka SheetJS untuk Membaca File Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #064e3b;
+            --secondary: #0f766e;
+            --accent: #d97706;
+            --success: #15803d;
+            --warning: #b45309;
+            --danger: #b91c1c;
+            --bg: #f0fdf4;
+            --light: #ffffff;
+            --border: #bbf7d0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--bg); color: #06281b; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: var(--light); padding: 24px; border-radius: 12px; box-shadow: 0 4px 16px rgba(6,78,59,0.08); border-top: 6px solid var(--primary); }
+
+        /* HALAMAN LOGIN */
+        #login-section { max-width: 450px; margin: 50px auto; background: var(--light); padding: 30px; border-radius: 12px; box-shadow: 0 4px 16px rgba(6,78,59,0.12); border-top: 6px solid var(--primary); }
+        .app-wrapper { display: none; }
+
+        /* KOP SURAT / HEADER APLIKASI */
+        .header-kop {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding-bottom: 15px;
+            border-bottom: 4px double var(--primary);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .header-kop img {
+            width: 85px;
+            height: auto;
+            max-height: 105px;
+            object-fit: contain;
+        }
+        .header-kop .kop-text h2 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .header-kop .kop-text h1 {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 2px 0;
+            text-transform: uppercase;
+        }
+        .header-kop .kop-text p {
+            font-size: 13px;
+            color: #047857;
+            font-weight: 500;
+        }
+
+        /* Tabs Navigasi */
+        .tabs { display: flex; gap: 8px; border-bottom: 2px solid var(--border); margin-bottom: 24px; flex-wrap: wrap; }
+        .tab-btn { padding: 10px 18px; border: none; background: none; font-size: 14px; font-weight: 600; color: #047857; cursor: pointer; border-radius: 6px 6px 0 0; }
+        .tab-btn.active { color: var(--primary); background: #ecfdf5; border-bottom: 3px solid var(--accent); }
+
+        /* Form & Cards */
+        .form-card { background: #f6fdf9; padding: 18px; border-radius: 8px; margin-bottom: 24px; border: 1px solid var(--border); }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+        input, select { padding: 9px 12px; border: 1px solid #a7f3d0; border-radius: 6px; font-size: 14px; width: 100%; background: white; color: #064e3b; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(6,78,59,0.1); }
+        
+        /* Tombol Aksi */
+        .btn { background: var(--primary); color: white; border: none; padding: 9px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+        .btn:hover { opacity: 0.9; }
+        .btn-success { background: #047857; }
+        .btn-warning { background: var(--accent); color: #fff; }
+        .btn-danger { background: var(--danger); }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+
+        .date-filter { display: flex; align-items: center; gap: 10px; background: #ecfdf5; padding: 8px 12px; border-radius: 6px; flex-wrap: wrap; margin-bottom: 16px; border: 1px solid #a7f3d0; }
+        .date-filter label { font-size: 13px; font-weight: 600; color: var(--primary); }
+        .date-filter input { width: auto; }
+
+        /* Modal Dialog */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-box { background: #fff; padding: 24px; border-radius: 8px; width: 400px; max-width: 90%; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-top: 4px solid var(--primary); }
+
+        /* Tabel Data */
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; }
+        th, td { border: 1px solid #a7f3d0; padding: 10px 12px; text-align: left; }
+        th { background-color: var(--primary); color: white; font-weight: 600; }
+        tr:nth-child(even) { background-color: #f6fdf9; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+
+        /* Style Khusus Tabel Neraca Format Cetak */
+        .print-neraca-table { border: none; margin-bottom: 20px; }
+        .print-neraca-table td, .print-neraca-table th { border: none; padding: 6px 10px; }
+        .section-header { background-color: #f2f2f2; font-weight: bold; text-transform: uppercase; }
+        .sub-header { font-weight: bold; padding-left: 15px; }
+        .indent { padding-left: 30px; }
+        .subtotal { font-weight: bold; border-top: 1px solid #000 !important; }
+        .grand-total { font-weight: bold; font-size: 13px; border-top: 2px solid #000 !important; border-bottom: 4px double #000 !important; background-color: #eef2f5; }
+
+        /* Tampilan View / Tab */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Kartu Ringkasan Keuangan */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .card { background: #fff; padding: 20px; border-radius: 8px; border: 1px solid var(--border); border-left: 5px solid var(--accent); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .card h3 { font-size: 13px; color: #047857; text-transform: uppercase; letter-spacing: 0.5px; }
+        .card p { font-size: 22px; font-weight: 700; color: var(--primary); margin-top: 8px; }
+
+        .badge { padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; display: inline-block; }
+        .badge-success { background: #dcfce7; color: #15803d; }
+        .badge-danger { background: #fee2e2; color: #b91c1c; }
+        .badge-warning { background: #fef3c7; color: #b45309; }
+
+        /* Pengaturan Cetak / Print */
+        @media print {
+            @page { size: A4 portrait; margin: 15mm; }
+            .tabs, .form-card, .btn, .toolbar button, .date-filter, .no-print, #tabungan, .modal-overlay, .tailwind-import-box { display: none !important; }
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; max-width: 100%; padding: 0; border-top: none; }
+            .view { display: none !important; }
+            .view.active { display: block !important; }
+            .print-area-only { display: block !important; }
+            .header-kop { margin-bottom: 20px; border-bottom: 3px double #000; display: flex !important; }
+            .grand-total { background-color: transparent !important; }
+        }
+        .print-area-only { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- SECTION LOGIN SISTEM -->
+    <div id="login-section">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="color: var(--primary); font-size: 18px; text-transform: uppercase;">SMK Negeri 1 Kota Bima</h2>
+            <p style="color: var(--secondary); font-size: 13px; font-weight: 600;">Sistem Akuntansi & Bank Mini Syariah</p>
+        </div>
+        <div style="background: #f6fdf9; padding: 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 16px;">
+            <p style="font-size: 13px; font-weight: 600; color: var(--primary); text-align: center;">-- SILAHKAN PILIH PERAN & MASUKKAN PASSWORD --</p>
+        </div>
+        <form onsubmit="handleLogin(event)">
+            <div style="margin-bottom: 12px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--primary); display: block; margin-bottom: 4px;">Pilih Peran:</label>
+                <select id="login-role" required>
+                    <option value="">-- Pilih Peran --</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Teller">Teller</option>
+                    <option value="Akuntan">Akuntan</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--primary); display: block; margin-bottom: 4px;">Password:</label>
+                <input type="password" id="login-pass" placeholder="Masukkan password" required>
+            </div>
+            <button type="submit" class="btn btn-success" style="width: 100%; justify-content: center;">Login Sistem</button>
+        </form>
+    </div>
+
+    <!-- APLIKASI UTAMA (MUNCUL SETELAH LOGIN BERHASIL) -->
+    <div class="container app-wrapper" id="app-main-container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;" class="no-print">
+            <span id="user-session-info" style="font-size: 13px; font-weight: 600; color: var(--secondary);"></span>
+            <button class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;" onclick="logoutSistem()">Logout</button>
+        </div>
+
+        <!-- KOP SURAT UTAMA -->
+        <div class="header-kop">
+            <img src="logo.JPG" id="logo-smk" alt="Logo SMK Negeri 1 Kota Bima" onerror="this.style.display='none'">
+            <div class="kop-text">
+                <h2>PEMERINTAH PROVINSI NUSA TENGGARA BARAT</h2>
+                <h1>SMK NEGERI 1 KOTA BIMA</h1>
+                <p>Sistem Informasi Akuntansi Syariah & Bank Mini Sekolah (Prinsip Syariah)</p>
+            </div>
+        </div>
+
+        <!-- AREA CETAK REKENING KORAN -->
+        <div id="print-nasabah-card" class="print-area-only" style="padding: 10px 0;">
+            <h3 style="text-align:center; margin-bottom:15px; text-transform:uppercase; font-size:16px; border-bottom: 2px solid #000; padding-bottom: 8px;">Buku Rekening Koran / Mutasi Tabungan Syariah</h3>
+            <table style="margin-bottom: 15px; font-size: 13px;">
+                <tr><td style="width:180px; font-weight:600; background:#f1f5f9;">Nomor Rekening</td><td id="p-rek">-</td></tr>
+                <tr><td style="font-weight:600; background:#f1f5f9;">Nama Nasabah</td><td id="p-nama">-</td></tr>
+                <tr><td style="font-weight:600; background:#f1f5f9;">Kelas / Rombel</td><td id="p-kelas">-</td></tr>
+                <tr><td style="font-weight:600; background:#f1f5f9;">Periode Cetak</td><td id="p-periode">-</td></tr>
+                <tr><td style="font-weight:600; background:#f1f5f9;">Saldo Awal Periode</td><td id="p-saldo-awal-periode">-</td></tr>
+                <tr><td style="font-weight:600; background:#f1f5f9;">Saldo Akhir Periode</td><td><b id="p-saldo" style="color:var(--success); font-size:15px;">-</b></td></tr>
+            </table>
+
+            <h4 style="margin-bottom: 8px; font-size: 14px;">Histori Mutasi Transaksi:</h4>
+            <table style="width:100%; border-collapse: collapse; font-size: 12px;">
+                <thead>
+                    <tr style="background:#e2e8f0; color:#0f172a;">
+                        <th style="border:1px solid #cbd5e1; padding:6px;">No</th>
+                        <th style="border:1px solid #cbd5e1; padding:6px;">Tanggal</th>
+                        <th style="border:1px solid #cbd5e1; padding:6px;">Keterangan / Jenis</th>
+                        <th style="border:1px solid #cbd5e1; padding:6px; text-align:right;">Setor (Debit)</th>
+                        <th style="border:1px solid #cbd5e1; padding:6px; text-align:right;">Tarik (Kredit)</th>
+                        <th style="border:1px solid #cbd5e1; padding:6px; text-align:right;">Saldo</th>
+                    </tr>
+                </thead>
+                <tbody id="p-mutasi-tbody"></tbody>
+            </table>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 30px; font-size: 13px;">
+                <div>
+                    <p>Mengetahui,</p>
+                    <p><b>Pengelola Bank Mini Syariah SMK N 1 Kota Bima</b></p>
+                    <br><br><br>
+                    <p>( _______________________ )</p>
+                </div>
+                <div style="text-align: right;">
+                    <p>Kota Bima, <span id="p-date-print"></span></p>
+                    <p>Nasabah / Siswa</p>
+                    <br><br><br>
+                    <p>( <span id="p-nama-ttd">-</span> )</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL FILTER CETAK -->
+        <div id="modal-print-filter" class="modal-overlay">
+            <div class="modal-box">
+                <h3 style="margin-bottom: 12px; font-size: 16px; color: var(--primary);">Filter Cetak Rekening Koran</h3>
+                <p style="font-size: 12px; color: #047857; margin-bottom: 15px;">Pilih rentang tanggal transaksi untuk nasabah: <br><b id="modal-nasabah-name" style="color:var(--accent);"></b></p>
+                <input type="hidden" id="modal-nasabah-id">
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--primary);">Dari Tanggal:</label>
+                    <input type="date" id="print-start-date">
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--primary);">Sampai Tanggal:</label>
+                    <input type="date" id="print-end-date">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                    <button class="btn" style="background: #64748b;" onclick="closePrintModal()">Batal</button>
+                    <button class="btn btn-success" onclick="executePrintRekeningKoran()">Cetak PDF</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL EDIT AKUN -->
+        <div id="modal-edit-akun" class="modal-overlay">
+            <div class="modal-box">
+                <h3 style="margin-bottom: 12px; font-size: 16px; color: var(--primary);">Edit Akun (Chart of Accounts)</h3>
+                <input type="hidden" id="edit-acc-old-code">
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--primary);">Kode Akun:</label>
+                    <input type="text" id="edit-acc-code" required>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--primary);">Nama Akun:</label>
+                    <input type="text" id="edit-acc-name" required>
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="font-size: 12px; font-weight: 600; color: var(--primary);">Kategori Akun:</label>
+                    <select id="edit-acc-type" required>
+                        <option value="Aset">Aset</option>
+                        <option value="Kewajiban">Kewajiban</option>
+                        <option value="Ekuitas">Ekuitas</option>
+                        <option value="Pendapatan">Pendapatan</option>
+                        <option value="Beban">Beban</option>
+                    </select>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                    <button class="btn" style="background: #64748b;" onclick="closeEditAkunModal()">Batal</button>
+                    <button class="btn btn-success" onclick="saveEditedAccount()">Simpan Perubahan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILTER PERIODE GLOBAL -->
+        <div class="date-filter no-print">
+            <label>Periode Transaksi:</label>
+            <input type="date" id="filter-start-date" onchange="applyGlobalFilter()">
+            <label>s/d</label>
+            <input type="date" id="filter-end-date" onchange="applyGlobalFilter()">
+            <button class="btn btn-secondary" style="background:#047857; color:#fff; padding:6px 12px; font-size:12px;" onclick="resetDateFilter()">Reset Tanggal</button>
+        </div>
+
+        <!-- TAB MENU UTAMA -->
+        <div class="tabs no-print" id="main-tabs-container">
+            <button class="tab-btn active" onclick="switchTab('akun')">1. Kelola Akun (CoA)</button>
+            <button class="tab-btn" onclick="switchTab('saldo-awal')">2. Neraca Saldo Awal</button>
+            <button class="tab-btn" onclick="switchTab('tabungan')">3. Bank Mini (Nasabah)</button>
+            <button class="tab-btn" onclick="switchTab('jurnal-khusus')">4. Input & Jurnal</button>
+            <button class="tab-btn" onclick="switchTab('bukubesar')">5. Buku Besar</button>
+            <button class="tab-btn" onclick="switchTab('labarugi')">6. Laba Rugi</button>
+            <button class="tab-btn" onclick="switchTab('neraca')">7. Neraca</button>
+            <button class="tab-btn" onclick="switchTab('pembiayaan-syariah')">8. Pembiayaan Syariah</button>
+        </div>
+
+        <!-- TAB 1: KELOLA AKUN -->
+        <div id="akun" class="view active">
+            <h2>Buat / Tambah Akun Baru</h2>
+            <div class="form-card">
+                <form id="form-account" onsubmit="addAccount(event)" class="form-grid">
+                    <input type="text" id="acc-code" placeholder="Kode Akun (misal: 101)" required>
+                    <input type="text" id="acc-name" placeholder="Nama Akun (misal: Kas)" required>
+                    <select id="acc-type" required>
+                        <option value="">-- Kategori Akun --</option>
+                        <option value="Aset">Aset</option>
+                        <option value="Kewajiban">Kewajiban</option>
+                        <option value="Ekuitas">Ekuitas</option>
+                        <option value="Pendapatan">Pendapatan</option>
+                        <option value="Beban">Beban</option>
+                    </select>
+                    <button type="submit" class="btn btn-success">+ Tambah Akun</button>
+                </form>
+            </div>
+
+            <h2>Daftar Akun (Chart of Accounts)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Nama Akun</th>
+                        <th>Kategori</th>
+                        <th class="text-center no-print" style="width: 150px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="table-akun"></tbody>
+            </table>
+        </div>
+
+        <!-- TAB 2: SALDO AWAL -->
+        <div id="saldo-awal" class="view">
+            <div class="toolbar">
+                <h2>Pengaturan Saldo Awal Akun</h2>
+                <button class="btn btn-success" onclick="saveInitialBalances()">Simpan Saldo Awal</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Nama Akun</th>
+                        <th>Kategori</th>
+                        <th style="width: 200px;">Saldo Awal Debit (Rp)</th>
+                        <th style="width: 200px;">Saldo Awal Kredit (Rp)</th>
+                    </tr>
+                </thead>
+                <tbody id="table-saldo-awal"></tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="3" class="text-right">Total Saldo Awal:</th>
+                        <th class="text-right" id="sa-total-debit">Rp 0</th>
+                        <th class="text-right" id="sa-total-kredit">Rp 0</th>
+                    </tr>
+                    <tr>
+                        <th colspan="3" class="text-right">Status Keseimbangan (Balance):</th>
+                        <th colspan="2" class="text-center" id="sa-status">
+                            <span class="badge badge-success">Balanced</span>
+                        </th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- TAB 3: BANK MINI / TABUNGAN NASABAH -->
+        <div id="tabungan" class="view">
+            <div class="toolbar">
+                <h2>Kelola Tabungan Nasabah (Bank Mini Syariah)</h2>
+            </div>
+
+            <div class="tailwind-import-box bg-brand-bg border border-brand-border rounded-lg p-4 mb-6 shadow-sm no-print" id="section-upload-nasabah">
+                <div class="flex items-center gap-2 mb-1">
+                    <svg class="w-5 h-5 text-brand-text" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    <h3 class="text-brand-text font-bold text-sm md:text-base">
+                        Upload & Download Data Nasabah (Excel / CSV)
+                    </h3>
+                </div>
+                <p class="text-gray-600 text-xs mb-3">
+                    Anda dapat memasukkan banyak data nasabah sekaligus menggunakan file Excel (.xlsx/.csv) atau mengunduh data nasabah yang tersimpan.
+                </p>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="bg-white border border-gray-300 rounded-md px-2 py-1 flex items-center shadow-sm">
+                        <input type="file" id="file-nasabah" accept=".xlsx, .xls, .csv" class="text-xs text-gray-700 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer">
+                    </div>
+                    <button type="button" onclick="uploadNasabah()" class="bg-brand-green hover:bg-brand-hover text-white text-xs font-semibold px-4 py-2 rounded-md flex items-center gap-2 transition duration-150 shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        Import / Upload File Nasabah
+                    </button>
+                    <button type="button" onclick="downloadTemplateNasabah()" class="bg-brand-orange hover:bg-brand-orangeHover text-white text-xs font-semibold px-4 py-2 rounded-md flex items-center gap-2 transition duration-150 shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Download Template Excel
+                    </button>
+                    <button type="button" onclick="downloadDataNasabah()" class="bg-brand-green hover:bg-brand-hover text-white text-xs font-semibold px-4 py-2 rounded-md flex items-center gap-2 transition duration-150 shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Download Semua Data (Excel)
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-card">
+                <h3 style="margin-bottom:12px;">Input Penyetoran & Penarikan Uang</h3>
+                <form onsubmit="simpanTransaksiTabungan(event)">
+                    <div class="form-grid">
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Tanggal</label>
+                            <input type="date" id="tab-date" required>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Cari / Pilih Nasabah</label>
+                            <select id="tab-nasabah" required><option value="">-- Pilih Nasabah --</option></select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Jenis Transaksi</label>
+                            <select id="tab-jenis" required>
+                                <option value="Setor">Penyetoran Uang (Simpan)</option>
+                                <option value="Tarik">Penarikan Uang (Ambil)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Nominal (Rp)</label>
+                            <input type="number" id="tab-amount" placeholder="Nominal Rp" min="1" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success" style="margin-top:5px;">Simpan Transaksi Bank</button>
+                </form>
+            </div>
+
+            <div class="toolbar" style="margin-bottom: 10px;">
+                <h3 style="font-size: 16px;">Daftar Saldo Nasabah</h3>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label style="font-size: 13px; font-weight: 600; color: var(--primary);">Filter Kelas:</label>
+                    <select id="filter-kelas" onchange="renderNasabah()" style="width: 200px;">
+                        <option value="Semua">Semua Kelas</option>
+                    </select>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:50px;">No</th>
+                        <th>Nomor Rekening</th>
+                        <th>Nama Nasabah</th>
+                        <th>Kelas</th>
+                        <th class="text-right">Total Saldo (Rp)</th>
+                        <th class="text-center th-aksi-header" style="width: 180px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="table-nasabah"></tbody>
+                <tfoot>
+                    <tr>
+                        <th colspan="4" class="text-right">Total Keseluruhan Saldo Bank Mini:</th>
+                        <th class="text-right" id="total-saldo-nasabah" colspan="2">Rp 0</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- TAB 4: INPUT & JURNAL -->
+        <div id="jurnal-khusus" class="view">
+            <h2>Input Transaksi Jurnal (Lainnya)</h2>
+
+            <div class="tailwind-import-box bg-brand-bg border border-brand-border rounded-lg p-4 mb-6 shadow-sm no-print">
+                <div class="flex items-center gap-2 mb-1">
+                    <svg class="w-5 h-5 text-brand-text" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    <h3 class="text-brand-text font-bold text-sm md:text-base">
+                        Upload & Download Data Jurnal (Excel / CSV)
+                    </h3>
+                </div>
+                <p class="text-gray-600 text-xs mb-3">
+                    Anda dapat memasukkan banyak data jurnal sekaligus menggunakan file Excel (.xlsx/.csv) atau mengunduh histori data transaksi jurnal yang tersimpan.
+                </p>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="bg-white border border-gray-300 rounded-md px-2 py-1 flex items-center shadow-sm">
+                        <input type="file" id="file-jurnal" accept=".xlsx, .xls, .csv" class="text-xs text-gray-700 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer">
+                    </div>
+                    <button type="button" onclick="uploadJurnal()" class="bg-brand-green hover:bg-brand-hover text-white text-xs font-semibold px-4 py-2 rounded-md flex items-center gap-2 transition duration-150 shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        Import / Upload File Jurnal
+                    </button>
+                    <button type="button" onclick="downloadTemplateJurnal()" class="bg-brand-orange hover:bg-brand-orangeHover text-white text-xs font-semibold px-4 py-2 rounded-md flex items-center gap-2 transition duration-150 shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Download Template Excel
+                    </button>
+                    <button type="button" onclick="exportCSV()" class="bg-brand-green hover:bg-brand-hover text-white text-xs font-semibold px-4 py-2 rounded-md flex items-center gap-2 transition duration-150 shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Download Semua Jurnal (Excel)
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-card">
+                <form id="form-transaction" onsubmit="addTransaction(event)">
+                    <div class="form-grid">
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Tanggal Transaksi</label>
+                            <input type="date" id="trx-date" required>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Jenis Jurnal</label>
+                            <select id="trx-journal-type" required>
+                                <option value="">-- Pilih Jenis Jurnal --</option>
+                                <option value="Jurnal Umum">Jurnal Umum</option>
+                                <option value="Jurnal Penyesuaian">Jurnal Penyesuaian (AJP)</option>
+                                <option value="Penerimaan Kas">Jurnal Penerimaan Kas</option>
+                                <option value="Pengeluaran Kas">Jurnal Pengeluaran Kas</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Keterangan</label>
+                            <input type="text" id="trx-desc" placeholder="Contoh: Pendapatan Lain" required>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Akun Debit</label>
+                            <select id="trx-debit" required><option value="">-- Pilih Debit --</option></select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Akun Kredit</label>
+                            <select id="trx-kredit" required><option value="">-- Pilih Kredit --</option></select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Nominal (Rp)</label>
+                            <input type="number" id="trx-amount" placeholder="Nominal Rp" min="1" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success" style="margin-top:5px;">+ Simpan Transaksi</button>
+                </form>
+            </div>
+
+            <div class="toolbar">
+                <h2>Daftar Transaksi Jurnal</h2>
+                <div style="display:flex; gap:10px;">
+                    <select id="filter-jurnal-type" onchange="renderJurnal()" style="width: auto;">
+                        <option value="Semua">Semua Jurnal</option>
+                        <option value="Jurnal Umum">Jurnal Umum</option>
+                        <option value="Jurnal Penyesuaian">Jurnal Penyesuaian</option>
+                        <option value="Penerimaan Kas">Jurnal Penerimaan Kas</option>
+                        <option value="Pengeluaran Kas">Jurnal Pengeluaran Kas</option>
+                    </select>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Tipe Jurnal</th>
+                        <th>Keterangan</th>
+                        <th>Akun Debit</th>
+                        <th>Akun Kredit</th>
+                        <th class="text-right">Nominal (Rp)</th>
+                        <th class="text-center no-print">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="table-jurnal"></tbody>
+            </table>
+        </div>
+
+        <!-- TAB 5: BUKU BESAR -->
+        <div id="bukubesar" class="view">
+            <div class="toolbar">
+                <h2>Buku Besar Utama</h2>
+                <button class="btn btn-warning" onclick="window.print()">Cetak / PDF</button>
+            </div>
+            <div class="form-card" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 220px;">
+                    <label for="filter-bb-akun" style="font-size: 12px; font-weight: 600; color: var(--primary); display: block; margin-bottom: 4px;">Pilih Akun:</label>
+                    <select id="filter-bb-akun" onchange="renderBukuBesar()"></select>
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: 600; color: var(--primary); display: block; margin-bottom: 4px;">Dari Tanggal:</label>
+                    <input type="date" id="bb-start-date" onchange="renderBukuBesar()">
+                </div>
+                <div>
+                    <label style="font-size: 12px; font-weight: 600; color: var(--primary); display: block; margin-bottom: 4px;">Sampai Tanggal:</label>
+                    <input type="date" id="bb-end-date" onchange="renderBukuBesar()">
+                </div>
+                <div style="align-self: flex-end;">
+                    <button class="btn" style="background:#047857; color:#fff; padding:9px 12px;" onclick="resetBukuBesarDateFilter()">Reset Tanggal</button>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Keterangan</th>
+                        <th class="text-right">Debit (Rp)</th>
+                        <th class="text-right">Kredit (Rp)</th>
+                        <th class="text-right">Saldo (Rp)</th>
+                    </tr>
+                </thead>
+                <tbody id="table-bukubesar"></tbody>
+            </table>
+        </div>
+
+        <!-- TAB 6: LABA RUGI -->
+        <div id="labarugi" class="view">
+            <div class="toolbar">
+                <h2>Laporan Laba Rugi</h2>
+                <button class="btn btn-warning" onclick="window.print()">Cetak / PDF</button>
+            </div>
+            <div class="card-grid">
+                <div class="card" style="border-left-color: #16a34a;">
+                    <h3>Total Pendapatan</h3>
+                    <p id="total-pendapatan">Rp 0</p>
+                </div>
+                <div class="card" style="border-left-color: #dc2626;">
+                    <h3>Total Beban</h3>
+                    <p id="total-beban">Rp 0</p>
+                </div>
+                <div class="card" style="border-left-color: var(--primary);">
+                    <h3>Laba / (Rugi) Bersih</h3>
+                    <p id="laba-bersih">Rp 0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 7: NERACA & FORMAT CETAK / PRINT -->
+        <div id="neraca" class="view">
+            <div class="toolbar no-print">
+                <h2>Laporan Neraca (Posisi Keuangan)</h2>
+                <button class="btn btn-warning" onclick="window.print()">Cetak / PDF</button>
+            </div>
+
+            <!-- Tampilan Dinamis Berdasarkan Akun Sistem -->
+            <div class="no-print" style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 30px;">
+                <div style="flex: 1; min-width: 300px;">
+                    <h3 style="background: var(--primary); color: white; padding: 10px; border-radius: 6px 6px 0 0;">Aset (Aktiva)</h3>
+                    <table>
+                        <thead><tr><th>Akun</th><th class="text-right">Saldo</th></tr></thead>
+                        <tbody id="neraca-aset"></tbody>
+                        <tfoot><tr><th>Total Aset</th><th class="text-right" id="total-aset">Rp 0</th></tr></tfoot>
+                    </table>
+                </div>
+                <div style="flex: 1; min-width: 300px;">
+                    <h3 style="background: #0f766e; color: white; padding: 10px; border-radius: 6px 6px 0 0;">Kewajiban & Ekuitas (Pasiva)</h3>
+                    <table>
+                        <thead><tr><th>Akun</th><th class="text-right">Saldo</th></tr></thead>
+                        <tbody id="neraca-pasiva"></tbody>
+                        <tfoot><tr><th>Total Pasiva</th><th class="text-right" id="total-pasiva">Rp 0</th></tr></tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Layout Format Cetak Neraca Standar (Tercetak saat window.print) -->
+            <div class="print-area-only">
+                <table class="print-neraca-table">
+                    <!-- ASET -->
+                    <tr class="section-header">
+                        <td colspan="2">ASET</td>
+                    </tr>
+                    
+                    <!-- Aset Lancar -->
+                    <tr class="sub-header">
+                        <td colspan="2">Aset Lancar</td>
+                    </tr>
+                    <tr>
+                        <td class="indent">Kas dan Setara Kas</td>
+                        <td class="text-right">50.000.000</td>
+                    </tr>
+                    <tr>
+                        <td class="indent">Piutang Usaha</td>
+                        <td class="text-right">25.000.000</td>
+                    </tr>
+                    <tr>
+                        <td class="indent">Persediaan Barang</td>
+                        <td class="text-right">35.000.000</td>
+                    </tr>
+                    <tr class="subtotal">
+                        <td class="indent">Total Aset Lancar</td>
+                        <td class="text-right">110.000.000</td>
+                    </tr>
+
+                    <!-- Aset Tidak Lancar -->
+                    <tr class="sub-header">
+                        <td colspan="2">Aset Tidak Lancar</td>
+                    </tr>
+                    <tr>
+                        <td class="indent">Peralatan Kantor</td>
+                        <td class="text-right">40.000.000</td>
+                    </tr>
+                    <tr>
+                        <td class="indent">Akumulasi Penyusutan Peralatan</td>
+                        <td class="text-right">(10.000.000)</td>
+                    </tr>
+                    <tr class="subtotal">
+                        <td class="indent">Total Aset Tidak Lancar</td>
+                        <td class="text-right">30.000.000</td>
+                    </tr>
+
+                    <!-- TOTAL ASET -->
+                    <tr class="grand-total">
+                        <td>TOTAL ASET</td>
+                        <td class="text-right">140.000.000</td>
+                    </tr>
+
+                    <tr><td colspan="2" style="height: 15px;"></td></tr>
+
+                    <!-- LIABILITAS & EKUITAS -->
+                    <tr class="section-header">
+                        <td colspan="2">LIABILITAS DAN EKUITAS</td>
+                    </tr>
+
+                    <!-- Liabilitas -->
+                    <tr class="sub-header">
+                        <td colspan="2">Liabilitas Jangka Pendek</td>
+                    </tr>
+                    <tr>
+                        <td class="indent">Utang Usaha</td>
+                        <td class="text-right">20.000.000</td>
+                    </tr>
+                    <tr>
+                        <td class="indent">Utang Pajak</td>
+                        <td class="text-right">5.000.000</td>
+                    </tr>
+                    <tr class="subtotal">
+                        <td class="indent">Total Liabilitas</td>
+                        <td class="text-right">25.000.000</td>
+                    </tr>
+
+                    <!-- Ekuitas -->
+                    <tr class="sub-header">
+                        <td colspan="2">Ekuitas</td>
+                    </tr>
+                    <tr>
+                        <td class="indent">Modal Disetor</td>
+                        <td class="text-right">100.000.000</td>
+                    </tr>
+                    <tr>
+                        <td class="indent">Saldo Laba (Retained Earnings)</td>
+                        <td class="text-right">15.000.000</td>
+                    </tr>
+                    <tr class="subtotal">
+                        <td class="indent">Total Ekuitas</td>
+                        <td class="text-right">115.000.000</td>
+                    </tr>
+
+                    <!-- TOTAL LIABILITAS DAN EKUITAS -->
+                    <tr class="grand-total">
+                        <td>TOTAL LIABILITAS DAN EKUITAS</td>
+                        <td class="text-right">140.000.000</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 8: PEMBIAYAAN SYARIAH -->
+        <div id="pembiayaan-syariah" class="view">
+            <div class="toolbar">
+                <h2>Menu Pembiayaan Berdasarkan Prinsip Syariah</h2>
+            </div>
+            <div class="form-card" style="background:#ecfdf5; border-color:#a7f3d0;">
+                <h3 style="margin-bottom:12px; color:var(--primary);">Simulasi & Pengajuan Pembiayaan Syariah</h3>
+                <form onsubmit="simpanPembiayaan(event)">
+                    <div class="form-grid">
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Tanggal Pengajuan</label>
+                            <input type="date" id="f-date" required>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Pilih Nasabah</label>
+                            <select id="f-nasabah" required><option value="">-- Pilih Nasabah --</option></select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Akad Syariah</label>
+                            <select id="f-akad" required onchange="toggleAkadFields()">
+                                <option value="Murabahah">Murabahah (Jual Beli / Margin)</option>
+                                <option value="Mudharabah">Mudharabah (Bagi Hasil Usaha)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Plafon Pembiayaan (Rp)</label>
+                            <input type="number" id="f-plafon" placeholder="Jumlah Pokok Rp" min="100000" required oninput="hitungSimulasi()">
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);" id="label-margin-bagi">Margin Keuntungan (%)</label>
+                            <input type="number" id="f-margin" placeholder="Persentase %" min="0" step="0.1" value="5" required oninput="hitungSimulasi()">
+                        </div>
+                        <div>
+                            <label style="font-size:12px; font-weight:600; color:var(--primary);">Jangka Waktu (Bulan)</label>
+                            <input type="number" id="f-tenor" placeholder="Jumlah Bulan" min="1" value="12" required oninput="hitungSimulasi()">
+                        </div>
+                    </div>
+                    <div style="background:#ffffff; border:1px solid #a7f3d0; padding:12px; border-radius:6px; margin-bottom:15px; display:flex; justify-content:space-around; flex-wrap:wrap; gap:10px; text-align:center;">
+                        <div>
+                            <span style="font-size:11px; color:#047857; display:block;">Total Kewajiban/Pengembalian</span>
+                            <b id="sim-total" style="color:var(--primary); font-size:16px;">Rp 0</b>
+                        </div>
+                        <div>
+                            <span style="font-size:11px; color:#047857; display:block;">Estimasi Angsuran / Bulan</span>
+                            <b id="sim-angsuran" style="color:var(--secondary); font-size:16px;">Rp 0</b>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success">+ Setujui & Catat Pembiayaan</button>
+                </form>
+            </div>
+            <h3>Daftar Pembiayaan Syariah Aktif</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Tanggal</th>
+                        <th>Nasabah</th>
+                        <th>Akad</th>
+                        <th class="text-right">Plafon (Rp)</th>
+                        <th class="text-right">Total Tagihan (Rp)</th>
+                        <th class="text-right">Angsuran/Bulan</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center no-print">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="table-pembiayaan"></tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    const data_akses = {
+        "Admin": {"password": "213", "tabs": ["akun", "saldo-awal", "tabungan", "jurnal-khusus", "bukubesar", "labarugi", "neraca", "pembiayaan-syariah"]},
+        "Teller": {"password": "123", "tabs": ["tabungan", "pembiayaan-syariah"]},
+        "Akuntan": {"password": "312", "tabs": ["akun", "saldo-awal", "jurnal-khusus", "bukubesar", "labarugi", "neraca"]}
+    };
+
+    function handleLogin(e) {
+        e.preventDefault();
+        const role = document.getElementById('login-role').value;
+        const pass = document.getElementById('login-pass').value;
+
+        if (data_akses[role] && data_akses[role].password === pass) {
+            localStorage.setItem('active_role', role);
+            initAppSession(role);
+        } else {
+            alert("[Akses Ditolak] Password salah atau peran tidak valid!");
+        }
+    }
+
+    function logoutSistem() {
+        localStorage.removeItem('active_role');
+        document.getElementById('app-main-container').style.display = 'none';
+        document.getElementById('login-section').style.display = 'block';
+        document.getElementById('login-pass').value = '';
+    }
+
+    function initAppSession(role) {
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('app-main-container').style.display = 'block';
+        document.getElementById('user-session-info').innerText = `Peran Aktif: ${role}`;
+
+        const allowedTabs = data_akses[role].tabs;
+        const tabButtons = document.querySelectorAll('.tabs .tab-btn');
+        
+        tabButtons.forEach(btn => {
+            const onClickAttr = btn.getAttribute('onclick');
+            const match = onClickAttr.match(/'([^']+)'/);
+            if (match) {
+                const tabId = match[1];
+                btn.style.display = allowedTabs.includes(tabId) ? 'inline-block' : 'none';
+            }
+        });
+
+        const uploadSection = document.getElementById('section-upload-nasabah');
+        if (role === 'Teller') {
+            if (uploadSection) uploadSection.style.display = 'none';
+        } else {
+            if (uploadSection) uploadSection.style.display = 'block';
+        }
+
+        switchTab(allowedTabs[0]);
+    }
+
+    const defaultAccounts = [
+        { code: '101', name: 'Kas', type: 'Aset', initDebit: 0, initKredit: 0 },
+        { code: '102', name: 'Piutang Usaha', type: 'Aset', initDebit: 0, initKredit: 0 },
+        { code: '103', name: 'Piutang Murabahah', type: 'Aset', initDebit: 0, initKredit: 0 },
+        { code: '201', name: 'Utang Usaha', type: 'Kewajiban', initDebit: 0, initKredit: 0 },
+        { code: '202', name: 'Tabungan Nasabah', type: 'Kewajiban', initDebit: 0, initKredit: 0 }, 
+        { code: '301', name: 'Modal Pemilik', type: 'Ekuitas', initDebit: 0, initKredit: 0 },
+        { code: '401', name: 'Pendapatan Penjualan', type: 'Pendapatan', initDebit: 0, initKredit: 0 },
+        { code: '402', name: 'Pendapatan Margin Pembiayaan', type: 'Pendapatan', initDebit: 0, initKredit: 0 },
+        { code: '501', name: 'Beban Gaji', type: 'Beban', initDebit: 0, initKredit: 0 }
+    ];
+
+    let accounts = JSON.parse(localStorage.getItem('app_coa')) || defaultAccounts;
+    let transactions = JSON.parse(localStorage.getItem('app_trx')) || [];
+    let nasabah = JSON.parse(localStorage.getItem('app_nasabah')) || [];
+    let pembiayaanList = JSON.parse(localStorage.getItem('app_pembiayaan')) || [];
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const activeRole = localStorage.getItem('active_role');
+        if (activeRole && data_akses[activeRole]) {
+            initAppSession(activeRole);
+        } else {
+            document.getElementById('login-section').style.display = 'block';
+            document.getElementById('app-main-container').style.display = 'none';
+        }
+
+        if(!accounts.some(a => a.name === 'Tabungan Nasabah')){
+            accounts.push({ code: '202', name: 'Tabungan Nasabah', type: 'Kewajiban', initDebit: 0, initKredit: 0 });
+        }
+        localStorage.setItem('app_coa', JSON.stringify(accounts));
+
+        document.getElementById('trx-date').valueAsDate = new Date();
+        document.getElementById('tab-date').valueAsDate = new Date();
+        document.getElementById('f-date').valueAsDate = new Date();
+        
+        updateAccountDropdowns();
+        renderAccountTable();
+        renderSaldoAwalTable();
+        renderJurnal();
+        renderNasabah();
+        renderPembiayaan();
+        hitungSimulasi();
+    });
+
+    function formatRP(num) {
+        return "Rp " + Number(num).toLocaleString('id-ID');
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        
+        document.querySelectorAll('.tabs .tab-btn').forEach(btn => {
+            if(btn.getAttribute('onclick').includes(tabId)) {
+                btn.classList.add('active');
+            }
+        });
+
+        if(tabId === 'saldo-awal') renderSaldoAwalTable();
+        if(tabId === 'tabungan') renderNasabah();
+        if(tabId === 'jurnal-khusus') renderJurnal();
+        if(tabId === 'bukubesar') renderBukuBesar();
+        if(tabId === 'labarugi') renderLabaRugi();
+        if(tabId === 'neraca') renderNeraca();
+        if(tabId === 'pembiayaan-syariah') renderPembiayaanDropdownNasabah();
+    }
+
+    function getFilteredTransactions() {
+        const startDate = document.getElementById('filter-start-date').value;
+        const endDate = document.getElementById('filter-end-date').value;
+        return transactions.filter(t => {
+            if (startDate && t.date < startDate) return false;
+            if (endDate && t.date > endDate) return false;
+            return true;
+        });
+    }
+
+    function applyGlobalFilter() {
+        const activeTab = document.querySelector('.view.active');
+        if(!activeTab) return;
+        const activeTabId = activeTab.id;
+        if(activeTabId === 'jurnal-khusus') renderJurnal();
+        if(activeTabId === 'bukubesar') renderBukuBesar();
+        if(activeTabId === 'labarugi') renderLabaRugi();
+        if(activeTabId === 'neraca') renderNeraca();
+    }
+
+    function resetDateFilter() {
+        document.getElementById('filter-start-date').value = '';
+        document.getElementById('filter-end-date').value = '';
+        applyGlobalFilter();
+    }
+
+    function resetBukuBesarDateFilter() {
+        document.getElementById('bb-start-date').value = '';
+        document.getElementById('bb-end-date').value = '';
+        renderBukuBesar();
+    }
+
+    /* TEMPLATE & IMPORT EXCEL JURNAL */
+    function downloadTemplateJurnal() {
+        let csvContent = "data:text/csv;charset=utf-8,Tanggal,Jenis Jurnal,Keterangan,Akun Debit,Akun Kredit,Nominal\n";
+        csvContent += '2026-08-20,Jurnal Umum,Pembelian Perlengkapan,Beban Gaji,Kas,500000\n';
+        const link = document.createElement("a");
+        link.href = encodeURI(csvContent);
+        link.download = `Template_Jurnal_Akuntansi.csv`;
+        link.click();
+    }
+
+    function uploadJurnal() {
+        const fileInput = document.getElementById('file-jurnal');
+        const file = fileInput.files[0];
+        if (!file) return alert("Pilih file Excel / CSV jurnal terlebih dahulu!");
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+                if(jsonData.length < 2) return alert("File kosong!");
+
+                let successCount = 0;
+                for(let i = 1; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    if(!row || row.length < 6) continue;
+
+                    transactions.push({
+                        id: Date.now() + i,
+                        date: row[0] || new Date().toISOString().split('T')[0],
+                        journalType: row[1] || 'Jurnal Umum',
+                        desc: row[2] || 'Import Data',
+                        debit: row[3] || 'Kas',
+                        kredit: row[4] || 'Modal Pemilik',
+                        amount: parseFloat(row[5]) || 0
+                    });
+                    successCount++;
+                }
+
+                localStorage.setItem('app_trx', JSON.stringify(transactions));
+                renderJurnal();
+                alert(`Berhasil mengimpor ${successCount} transaksi jurnal!`);
+                fileInput.value = '';
+            } catch(err) {
+                alert("Gagal membaca file jurnal!");
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    /* TEMPLATE & EXPORT NASABAH */
+    function downloadTemplateNasabah() {
+        let csvContent = "data:text/csv;charset=utf-8,nomor Rekening,nama nasabah,kelas,saldo\n";
+        csvContent += 'REK001,Ahmad Yani,XII AK,150000\n';
+        const link = document.createElement("a");
+        link.href = encodeURI(csvContent);
+        link.download = `Template_Nasabah_Bank_Mini.csv`;
+        link.click();
+    }
+
+    function downloadDataNasabah() {
+        let csvContent = "data:text/csv;charset=utf-8,Nomor Rekening,Nama Nasabah,Kelas,Total Saldo\n";
+        nasabah.forEach(n => {
+            csvContent += `"${n.rekening}","${n.nama}","${n.kelas}",${n.saldo}\n`;
+        });
+        const link = document.createElement("a");
+        link.href = encodeURI(csvContent);
+        link.download = `Daftar_Nasabah_Bank_Mini.csv`;
+        link.click();
+    }
+
+    /* EDIT AKUN (CoA) */
+    function openEditAkunModal(code) {
+        const acc = accounts.find(a => a.code === code);
+        if(!acc) return;
+        document.getElementById('edit-acc-old-code').value = acc.code;
+        document.getElementById('edit-acc-code').value = acc.code;
+        document.getElementById('edit-acc-name').value = acc.name;
+        document.getElementById('edit-acc-type').value = acc.type;
+        document.getElementById('modal-edit-akun').style.display = 'flex';
+    }
+
+    function closeEditAkunModal() {
+        document.getElementById('modal-edit-akun').style.display = 'none';
+    }
+
+    function saveEditedAccount() {
+        const oldCode = document.getElementById('edit-acc-old-code').value;
+        const newCode = document.getElementById('edit-acc-code').value.trim();
+        const newName = document.getElementById('edit-acc-name').value.trim();
+        const newType = document.getElementById('edit-acc-type').value;
+
+        if(!newCode || !newName) return alert("Kode dan nama akun tidak boleh kosong!");
+
+        if(newCode !== oldCode && accounts.some(a => a.code === newCode)) {
+            return alert("Kode akun tersebut sudah digunakan oleh akun lain!");
+        }
+
+        const acc = accounts.find(a => a.code === oldCode);
+        if(acc) {
+            const oldName = acc.name;
+            acc.code = newCode;
+            acc.name = newName;
+            acc.type = newType;
+
+            if(oldName !== newName) {
+                transactions.forEach(t => {
+                    if(t.debit === oldName) t.debit = newName;
+                    if(t.kredit === oldName) t.kredit = newName;
+                });
+                localStorage.setItem('app_trx', JSON.stringify(transactions));
+            }
+
+            accounts.sort((a,b) => a.code.localeCompare(b.code));
+            localStorage.setItem('app_coa', JSON.stringify(accounts));
+
+            closeEditAkunModal();
+            renderAccountTable();
+            updateAccountDropdowns();
+            alert("Data akun berhasil diperbarui!");
+        }
+    }
+
+    /* UPLOAD & TAMPILAN NASABAH */
+    function uploadNasabah() {
+        const fileInput = document.getElementById('file-nasabah');
+        const file = fileInput.files[0];
+        
+        if (!file) return alert("Silakan pilih file Excel (.xlsx / .xls) terlebih dahulu!");
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                
+                if(jsonData.length < 2) return alert("File Excel kosong atau tidak memiliki baris data.");
+
+                const headers = jsonData[0].map(h => (h || '').toString().toLowerCase().trim());
+                const idxRekening = headers.findIndex(h => h.includes('rekening'));
+                const idxKelas = headers.findIndex(h => h.includes('kelas'));
+                const idxNama = headers.findIndex(h => h.includes('nama') || h.includes('nasabah'));
+                const idxSaldo = headers.findIndex(h => h.includes('saldo') || h.includes('tabungan'));
+
+                if(idxRekening === -1 || idxNama === -1) {
+                    return alert("Gagal! Pastikan file Excel memiliki kolom 'nomor Rekening' dan 'nama nasabah'.");
+                }
+
+                let successCount = 0;
+                for(let i = 1; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    if(!row || row.length === 0) continue;
+
+                    const rekening = row[idxRekening] ? row[idxRekening].toString().trim() : '';
+                    const nama = row[idxNama] ? row[idxNama].toString().trim() : '';
+                    const kelas = (idxKelas !== -1 && row[idxKelas]) ? row[idxKelas].toString().trim() : '-';
+                    const saldoAwal = (idxSaldo !== -1 && row[idxSaldo]) ? parseFloat(row[idxSaldo]) || 0 : 0;
+
+                    if(nama && rekening) {
+                        const isExist = nasabah.some(n => n.rekening === rekening || n.nama.toLowerCase() === nama.toLowerCase());
+                        if(!isExist) {
+                            nasabah.push({
+                                id: 'NSB' + Date.now().toString().slice(-6) + i,
+                                rekening: rekening,
+                                nama: nama,
+                                kelas: kelas,
+                                saldo: saldoAwal
+                            });
+                            successCount++;
+                        }
+                    }
+                }
+
+                if(successCount > 0) {
+                    localStorage.setItem('app_nasabah', JSON.stringify(nasabah));
+                    renderNasabah();
+                    alert(`Upload Sukses! Berhasil menambahkan ${successCount} nasabah.`);
+                } else {
+                    alert("Tidak ada data baru ditambahkan (mungkin duplikat).");
+                }
+                fileInput.value = "";
+            } catch(error) {
+                alert("Terjadi kesalahan saat memproses file Excel.");
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function renderNasabah() {
+        const tbody = document.getElementById('table-nasabah');
+        const select = document.getElementById('tab-nasabah');
+        const filterKelasSelect = document.getElementById('filter-kelas');
+        
+        if(!tbody || !select || !filterKelasSelect) return;
+
+        tbody.innerHTML = '';
+        select.innerHTML = '<option value="">-- Pilih Nasabah --</option>';
+
+        nasabah.forEach(n => {
+            if(!n.rekening) n.rekening = n.id;
+            if(!n.kelas) n.kelas = '-';
+            if(isNaN(n.saldo)) n.saldo = 0;
+        });
+
+        const listKelas = [...new Set(nasabah.map(n => n.kelas))].sort();
+        const currentSelectedKelas = filterKelasSelect.value;
+        
+        filterKelasSelect.innerHTML = '<option value="Semua">Semua Kelas</option>';
+        listKelas.forEach(k => {
+            filterKelasSelect.add(new Option(k, k));
+        });
+        
+        if(listKelas.includes(currentSelectedKelas) || currentSelectedKelas === 'Semua') {
+            filterKelasSelect.value = currentSelectedKelas;
+        } else {
+            filterKelasSelect.value = 'Semua';
+        }
+
+        const selectedFilterKelas = filterKelasSelect.value;
+        const filteredNasabah = nasabah.filter(n => {
+            if(selectedFilterKelas !== 'Semua' && n.kelas !== selectedFilterKelas) return false;
+            return true;
+        });
+
+        filteredNasabah.sort((a, b) => {
+            let compKelas = a.kelas.localeCompare(b.kelas, undefined, {numeric: true, sensitivity: 'base'});
+            if (compKelas !== 0) return compKelas;
+            return a.nama.localeCompare(b.nama);
+        });
+
+        let totalSeluruh = 0;
+        nasabah.forEach(n => { totalSeluruh += n.saldo; });
+
+        const currentRole = localStorage.getItem('active_role');
+
+        filteredNasabah.forEach((n, index) => {
+            let aksiButtons = `<button class="btn btn-warning" style="padding: 3px 8px; font-size: 11px;" onclick="openPrintModal('${n.id}')">Print</button>`;
+            if (currentRole !== 'Teller') {
+                aksiButtons += `
+                    <button class="btn" style="padding: 3px 8px; font-size: 11px;" onclick="editNasabah('${n.id}')">Edit</button>
+                    <button class="btn btn-danger" style="padding: 3px 8px; font-size: 11px;" onclick="hapusNasabah('${n.id}')">Hapus</button>
+                `;
+            }
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${n.rekening}</td>
+                    <td><b>${n.nama}</b></td>
+                    <td><span class="badge badge-warning" style="font-size:11px; padding:3px 8px;">${n.kelas}</span></td>
+                    <td class="text-right">${formatRP(n.saldo)}</td>
+                    <td class="text-center" style="display: flex; gap: 4px; justify-content: center;">
+                        ${aksiButtons}
+                    </td>
+                </tr>
+            `;
+        });
+
+        let sortedAllNasabah = [...nasabah].sort((a, b) => {
+            let compKelas = a.kelas.localeCompare(b.kelas, undefined, {numeric: true, sensitivity: 'base'});
+            if (compKelas !== 0) return compKelas;
+            return a.nama.localeCompare(b.nama);
+        });
+        
+        sortedAllNasabah.forEach(n => {
+            select.add(new Option(`[${n.rekening}] ${n.nama} - Kls: ${n.kelas} (Saldo: ${formatRP(n.saldo)})`, n.id));
+        });
+
+        document.getElementById('total-saldo-nasabah').innerText = formatRP(totalSeluruh);
+        renderPembiayaanDropdownNasabah();
+    }
+
+    function openPrintModal(id) {
+        const n = nasabah.find(item => item.id === id);
+        if(!n) return;
+        document.getElementById('modal-nasabah-id').value = n.id;
+        document.getElementById('modal-nasabah-name').innerText = `${n.nama} (${n.rekening})`;
+        
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('print-start-date').value = '';
+        document.getElementById('print-end-date').value = today;
+
+        document.getElementById('modal-print-filter').style.display = 'flex';
+    }
+
+    function closePrintModal() {
+        document.getElementById('modal-print-filter').style.display = 'none';
+    }
+
+    function executePrintRekeningKoran() {
+        const id = document.getElementById('modal-nasabah-id').value;
+        const startDate = document.getElementById('print-start-date').value;
+        const endDate = document.getElementById('print-end-date').value;
+        closePrintModal();
+
+        const n = nasabah.find(item => item.id === id);
+        if(!n) return;
+
+        document.getElementById('p-rek').innerText = n.rekening;
+        document.getElementById('p-nama').innerText = n.nama;
+        document.getElementById('p-kelas').innerText = n.kelas;
+        
+        let periodeStr = "Semua Periode";
+        if (startDate && endDate) periodeStr = `${startDate} s/d ${endDate}`;
+        else if (startDate) periodeStr = `Mulai ${startDate}`;
+        else if (endDate) periodeStr = `Sampai ${endDate}`;
+        document.getElementById('p-periode').innerText = periodeStr;
+
+        document.getElementById('p-nama-ttd').innerText = n.nama;
+        document.getElementById('p-date-print').innerText = new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'});
+
+        const keyword = n.nama.toLowerCase();
+        const rekKeyword = n.rekening.toLowerCase();
+        const matchedTrx = transactions.filter(t => {
+            const desc = (t.desc || '').toLowerCase();
+            return desc.includes(keyword) || desc.includes(rekKeyword);
+        });
+
+        matchedTrx.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+        let saldoAwalPeriode = 0;
+        let runningSaldo = 0;
+        const tbodyMutasi = document.getElementById('p-mutasi-tbody');
+        tbodyMutasi.innerHTML = '';
+
+        matchedTrx.forEach(t => {
+            let isSetor = t.debit === 'Kas' || t.journalType === 'Penerimaan Kas';
+            let val = isSetor ? t.amount : -t.amount;
+
+            if (startDate && t.date < startDate) {
+                saldoAwalPeriode += val;
+            }
+        });
+
+        runningSaldo = saldoAwalPeriode;
+        document.getElementById('p-saldo-awal-periode').innerText = formatRP(saldoAwalPeriode);
+
+        const filteredMutasi = matchedTrx.filter(t => {
+            if (startDate && t.date < startDate) return false;
+            if (endDate && t.date > endDate) return false;
+            return true;
+        });
+
+        if(filteredMutasi.length === 0 && !startDate && !endDate && matchedTrx.length === 0) {
+            tbodyMutasi.innerHTML = `<tr><td colspan="6" class="text-center" style="color:#64748b; padding:15px;">Belum ada catatan mutasi transaksi untuk nasabah ini.</td></tr>`;
+        } else {
+            filteredMutasi.forEach((t, idx) => {
+                let isSetor = t.debit === 'Kas' || t.journalType === 'Penerimaan Kas';
+                let setorVal = isSetor ? t.amount : 0;
+                let tarikVal = !isSetor ? t.amount : 0;
+                runningSaldo += (setorVal - tarikVal);
+
+                tbodyMutasi.innerHTML += `
+                    <tr>
+                        <td style="border:1px solid #cbd5e1; padding:5px; text-align:center;">${idx + 1}</td>
+                        <td style="border:1px solid #cbd5e1; padding:5px;">${t.date}</td>
+                        <td style="border:1px solid #cbd5e1; padding:5px;">${t.desc}</td>
+                        <td style="border:1px solid #cbd5e1; padding:5px; text-align:right;">${setorVal ? formatRP(setorVal) : '-'}</td>
+                        <td style="border:1px solid #cbd5e1; padding:5px; text-align:right;">${tarikVal ? formatRP(tarikVal) : '-'}</td>
+                        <td style="border:1px solid #cbd5e1; padding:5px; text-align:right; font-weight:bold;">${formatRP(runningSaldo)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        document.getElementById('p-saldo').innerText = formatRP(runningSaldo);
+        window.print();
+    }
+
+    function editNasabah(id) {
+        if (localStorage.getItem('active_role') === 'Teller') {
+            alert("Akses ditolak: Teller tidak diperbolehkan mengedit data nasabah.");
+            return;
+        }
+        const n = nasabah.find(item => item.id === id);
+        if(!n) return;
+        const newRek = prompt("Ubah Nomor Rekening:", n.rekening);
+        if(newRek === null) return;
+        const newNama = prompt("Ubah Nama Nasabah:", n.nama);
+        if(newNama === null) return;
+        const newKelas = prompt("Ubah Kelas Nasabah:", n.kelas);
+        if(newKelas === null) return;
+        const newSaldo = prompt("Ubah Saldo Total:", n.saldo);
+        if(newSaldo === null) return;
+
+        if(newRek.trim() !== '' && newNama.trim() !== '') {
+            n.rekening = newRek.trim();
+            n.nama = newNama.trim();
+            n.kelas = newKelas.trim() || '-';
+            n.saldo = parseFloat(newSaldo) || 0;
+            localStorage.setItem('app_nasabah', JSON.stringify(nasabah));
+            renderNasabah();
+            alert("Data nasabah berhasil diperbarui!");
+        }
+    }
+
+    function hapusNasabah(id) {
+        if (localStorage.getItem('active_role') === 'Teller') {
+            alert("Akses ditolak: Teller tidak diperbolehkan menghapus data nasabah.");
+            return;
+        }
+        const n = nasabah.find(item => item.id === id);
+        if (confirm(`Anda yakin ingin menghapus nasabah: ${n.nama}?`)) {
+            nasabah = nasabah.filter(item => item.id !== id);
+            localStorage.setItem('app_nasabah', JSON.stringify(nasabah));
+            renderNasabah();
+        }
+    }
+
+    function simpanTransaksiTabungan(e) {
+        e.preventDefault();
+        const date = document.getElementById('tab-date').value;
+        const nasabahId = document.getElementById('tab-nasabah').value;
+        const jenis = document.getElementById('tab-jenis').value;
+        const amount = parseFloat(document.getElementById('tab-amount').value);
+
+        const selectedNasabah = nasabah.find(n => n.id === nasabahId);
+        if (!selectedNasabah) return alert("Pilih nasabah terlebih dahulu!");
+
+        if (jenis === 'Tarik' && selectedNasabah.saldo < amount) {
+            return alert("Gagal! Saldo nasabah tidak mencukupi untuk melakukan penarikan.");
+        }
+
+        if (jenis === 'Setor') {
+            selectedNasabah.saldo += amount;
+            transactions.push({
+                id: Date.now(), date: date, journalType: 'Penerimaan Kas', 
+                desc: `Setor Tunai: ${selectedNasabah.nama} (${selectedNasabah.rekening})`, 
+                debit: 'Kas', kredit: 'Tabungan Nasabah', amount: amount
+            });
+        } else {
+            selectedNasabah.saldo -= amount;
+            transactions.push({
+                id: Date.now(), date: date, journalType: 'Pengeluaran Kas', 
+                desc: `Tarik Tunai: ${selectedNasabah.nama} (${selectedNasabah.rekening})`, 
+                debit: 'Tabungan Nasabah', kredit: 'Kas', amount: amount
+            });
+        }
+
+        localStorage.setItem('app_nasabah', JSON.stringify(nasabah));
+        localStorage.setItem('app_trx', JSON.stringify(transactions));
+
+        document.getElementById('tab-amount').value = '';
+        renderNasabah(); 
+        alert(`Transaksi ${jenis} sebesar Rp ${amount.toLocaleString('id-ID')} berhasil diproses!`);
+    }
+
+    /* AKUNTANSI UMUM */
+    function addAccount(e) {
+        e.preventDefault();
+        const code = document.getElementById('acc-code').value.trim();
+        const name = document.getElementById('acc-name').value.trim();
+        const type = document.getElementById('acc-type').value;
+
+        if (accounts.some(a => a.code === code)) return alert("Kode akun sudah ada!");
+        accounts.push({ code, name, type, initDebit: 0, initKredit: 0 });
+        accounts.sort((a,b) => a.code.localeCompare(b.code));
+        localStorage.setItem('app_coa', JSON.stringify(accounts));
+        
+        document.getElementById('form-account').reset();
+        renderAccountTable();
+        updateAccountDropdowns();
+    }
+
+    function deleteAccount(code) {
+        const acc = accounts.find(a => a.code === code);
+        if (confirm(`Hapus akun ${acc.name}?`)) {
+            accounts = accounts.filter(a => a.code !== code);
+            localStorage.setItem('app_coa', JSON.stringify(accounts));
+            renderAccountTable();
+            updateAccountDropdowns();
+        }
+    }
+
+    function renderAccountTable() {
+        const tbody = document.getElementById('table-akun');
+        if(!tbody) return;
+        tbody.innerHTML = accounts.map(a => `
+            <tr>
+                <td>${a.code}</td><td>${a.name}</td><td>${a.type}</td>
+                <td class="text-center no-print" style="display: flex; gap: 4px; justify-content: center;">
+                    <button class="btn btn-warning" style="padding: 3px 8px; font-size: 11px;" onclick="openEditAkunModal('${a.code}')">Edit</button>
+                    <button class="btn btn-danger" style="padding: 3px 8px; font-size: 11px;" onclick="deleteAccount('${a.code}')">Hapus</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function updateAccountDropdowns() {
+        const debit = document.getElementById('trx-debit');
+        const kredit = document.getElementById('trx-kredit');
+        const bbSelect = document.getElementById('filter-bb-akun');
+
+        if(!debit || !kredit || !bbSelect) return;
+
+        debit.innerHTML = '<option value="">-- Pilih Debit --</option>';
+        kredit.innerHTML = '<option value="">-- Pilih Kredit --</option>';
+        bbSelect.innerHTML = '';
+
+        accounts.forEach(a => {
+            const optText = `${a.code} - ${a.name}`;
+            debit.add(new Option(optText, a.name));
+            kredit.add(new Option(optText, a.name));
+            bbSelect.add(new Option(optText, a.name));
+        });
+    }
+
+    function renderSaldoAwalTable() {
+        const tbody = document.getElementById('table-saldo-awal');
+        if(!tbody) return;
+        tbody.innerHTML = accounts.map(a => `
+            <tr>
+                <td>${a.code}</td><td>${a.name}</td><td>${a.type}</td>
+                <td><input type="number" class="sa-debit-input" data-code="${a.code}" value="${a.initDebit || 0}" min="0" onchange="calculateSATotals()"></td>
+                <td><input type="number" class="sa-kredit-input" data-code="${a.code}" value="${a.initKredit || 0}" min="0" onchange="calculateSATotals()"></td>
+            </tr>
+        `).join('');
+        calculateSATotals();
+    }
+
+    function calculateSATotals() {
+        let totDebit = 0, totKredit = 0;
+        document.querySelectorAll('.sa-debit-input').forEach(i => totDebit += (parseFloat(i.value) || 0));
+        document.querySelectorAll('.sa-kredit-input').forEach(i => totKredit += (parseFloat(i.value) || 0));
+
+        const debitEl = document.getElementById('sa-total-debit');
+        const kreditEl = document.getElementById('sa-total-kredit');
+        if(debitEl) debitEl.innerText = formatRP(totDebit);
+        if(kreditEl) kreditEl.innerText = formatRP(totKredit);
+        
+        const statusEl = document.getElementById('sa-status');
+        if(statusEl) {
+            statusEl.innerHTML = (totDebit === totKredit) 
+                ? `<span class="badge badge-success">Balanced</span>` 
+                : `<span class="badge badge-danger">Unbalanced</span>`;
+        }
+    }
+
+    function saveInitialBalances() {
+        document.querySelectorAll('.sa-debit-input').forEach(input => {
+            const acc = accounts.find(a => a.code === input.getAttribute('data-code'));
+            if (acc) acc.initDebit = parseFloat(input.value) || 0;
+        });
+        document.querySelectorAll('.sa-kredit-input').forEach(input => {
+            const acc = accounts.find(a => a.code === input.getAttribute('data-code'));
+            if (acc) acc.initKredit = parseFloat(input.value) || 0;
+        });
+        localStorage.setItem('app_coa', JSON.stringify(accounts));
+        alert("Saldo Awal berhasil disimpan!");
+    }
+
+    function addTransaction(e) {
+        e.preventDefault();
+        const date = document.getElementById('trx-date').value;
+        const journalType = document.getElementById('trx-journal-type').value;
+        const desc = document.getElementById('trx-desc').value;
+        const debit = document.getElementById('trx-debit').value;
+        const kredit = document.getElementById('trx-kredit').value;
+        const amount = parseFloat(document.getElementById('trx-amount').value);
+
+        if (debit === kredit) return alert("Akun Debit dan Kredit tidak boleh sama!");
+
+        transactions.push({ id: Date.now(), date, journalType, desc, debit, kredit, amount });
+        localStorage.setItem('app_trx', JSON.stringify(transactions));
+
+        document.getElementById('form-transaction').reset();
+        document.getElementById('trx-date').valueAsDate = new Date();
+        renderJurnal();
+        alert("Transaksi berhasil disimpan!");
+    }
+
+    function renderJurnal() {
+        const tbody = document.getElementById('table-jurnal');
+        const filterJurnalEl = document.getElementById('filter-jurnal-type');
+        if(!tbody || !filterJurnalEl) return;
+
+        const filterJurnal = filterJurnalEl.value;
+        let filtered = getFilteredTransactions();
+        if (filterJurnal !== 'Semua') filtered = filtered.filter(t => t.journalType === filterJurnal);
+        filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+        tbody.innerHTML = filtered.map(t => `
+            <tr>
+                <td>${t.date}</td><td><b>${t.journalType}</b></td><td>${t.desc}</td><td>${t.debit}</td><td>${t.kredit}</td>
+                <td class="text-right">${formatRP(t.amount)}</td>
+                <td class="text-center no-print"><button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteTransaction(${t.id})">Hapus</button></td>
+            </tr>
+        `).join('');
+    }
+
+    function deleteTransaction(id) {
+        if (confirm("Hapus transaksi ini?")) {
+            transactions = transactions.filter(t => t.id !== id);
+            localStorage.setItem('app_trx', JSON.stringify(transactions));
+            renderJurnal();
+        }
+    }
+
+    function renderBukuBesar() {
+        const accSelect = document.getElementById('filter-bb-akun');
+        const tbody = document.getElementById('table-bukubesar');
+        if(!accSelect || !tbody) return;
+
+        const accName = accSelect.value;
+        const startDate = document.getElementById('bb-start-date').value;
+        const endDate = document.getElementById('bb-end-date').value;
+        tbody.innerHTML = '';
+        const accInfo = accounts.find(a => a.name === accName);
+        if (!accInfo) return;
+
+        let sortedTrx = [...transactions].sort((a,b) => new Date(a.date) - new Date(b.date));
+        let saldo = ['Aset', 'Beban'].includes(accInfo.type) ? (accInfo.initDebit || 0) - (accInfo.initKredit || 0) : (accInfo.initKredit || 0) - (accInfo.initDebit || 0);
+
+        sortedTrx.forEach(t => {
+            if (t.debit === accName || t.kredit === accName) {
+                const debitVal = t.debit === accName ? t.amount : 0;
+                const kreditVal = t.kredit === accName ? t.amount : 0;
+                
+                if (startDate && t.date < startDate) {
+                    saldo += ['Aset', 'Beban'].includes(accInfo.type) ? (debitVal - kreditVal) : (kreditVal - debitVal);
+                }
+            }
+        });
+
+        let labelSaldoAwal = startDate ? `Saldo Awal (s.d. ${startDate})` : "Saldo Awal";
+
+        tbody.innerHTML += `
+            <tr style="background:#f1f5f9; font-weight:600;">
+                <td>-</td><td>${labelSaldoAwal}</td>
+                <td class="text-right">-</td>
+                <td class="text-right">-</td>
+                <td class="text-right">${formatRP(saldo)}</td>
+            </tr>
+        `;
+
+        sortedTrx.forEach(t => {
+            if (t.debit === accName || t.kredit === accName) {
+                if (startDate && t.date < startDate) return;
+                if (endDate && t.date > endDate) return;
+
+                const debitVal = t.debit === accName ? t.amount : 0;
+                const kreditVal = t.kredit === accName ? t.amount : 0;
+                saldo += ['Aset', 'Beban'].includes(accInfo.type) ? (debitVal - kreditVal) : (kreditVal - debitVal);
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${t.date}</td><td>${t.desc}</td>
+                        <td class="text-right">${debitVal ? formatRP(debitVal) : '-'}</td>
+                        <td class="text-right">${kreditVal ? formatRP(kreditVal) : '-'}</td>
+                        <td class="text-right">${formatRP(saldo)}</td>
+                    </tr>
+                `;
+            }
+        });
+    }
+
+    function getBalances() {
+        let balances = {};
+        accounts.forEach(a => {
+            balances[a.name] = ['Aset', 'Beban'].includes(a.type) ? (a.initDebit || 0) - (a.initKredit || 0) : (a.initKredit || 0) - (a.initDebit || 0);
+        });
+        getFilteredTransactions().forEach(t => {
+            const debitAcc = accounts.find(a => a.name === t.debit);
+            const kreditAcc = accounts.find(a => a.name === t.kredit);
+            if (debitAcc) balances[t.debit] += ['Aset', 'Beban'].includes(debitAcc.type) ? t.amount : -t.amount;
+            if (kreditAcc) balances[t.kredit] += ['Aset', 'Beban'].includes(kreditAcc.type) ? -t.amount : t.amount;
+        });
+        return balances;
+    }
+
+    function renderLabaRugi() {
+        const balances = getBalances();
+        let totPendapatan = 0, totBeban = 0;
+        accounts.forEach(a => {
+            if (a.type === 'Pendapatan') totPendapatan += (balances[a.name] || 0);
+            if (a.type === 'Beban') totBeban += (balances[a.name] || 0);
+        });
+        const laba = totPendapatan - totBeban;
+        
+        const tpEl = document.getElementById('total-pendapatan');
+        const tbEl = document.getElementById('total-beban');
+        const lbEl = document.getElementById('laba-bersih');
+        
+        if(tpEl) tpEl.innerText = formatRP(totPendapatan);
+        if(tbEl) tbEl.innerText = formatRP(totBeban);
+        if(lbEl) lbEl.innerText = formatRP(laba);
+        
+        return laba;
+    }
+
+    function renderNeraca() {
+        const balances = getBalances();
+        const labaBersih = renderLabaRugi();
+        let tbodyAset = document.getElementById('neraca-aset'), tbodyPasiva = document.getElementById('neraca-pasiva');
+        if(!tbodyAset || !tbodyPasiva) return;
+
+        tbodyAset.innerHTML = ''; tbodyPasiva.innerHTML = '';
+        let totAset = 0, totPasiva = 0;
+
+        accounts.forEach(a => {
+            const saldo = balances[a.name] || 0;
+            if (a.type === 'Aset') {
+                totAset += saldo;
+                tbodyAset.innerHTML += `<tr><td>${a.name}</td><td class="text-right">${formatRP(saldo)}</td></tr>`;
+            } else if (a.type === 'Kewajiban' || a.type === 'Ekuitas') {
+                let currentSaldo = saldo;
+                if (a.name === 'Modal Pemilik') currentSaldo += labaBersih;
+                totPasiva += currentSaldo;
+                tbodyPasiva.innerHTML += `<tr><td>${a.name}</td><td class="text-right">${formatRP(currentSaldo)}</td></tr>`;
+            }
+        });
+        
+        const taEl = document.getElementById('total-aset');
+        const tpEl = document.getElementById('total-pasiva');
+        if(taEl) taEl.innerText = formatRP(totAset);
+        if(tpEl) tpEl.innerText = formatRP(totPasiva);
+    }
+
+    function exportCSV() {
+        let csv = "data:text/csv;charset=utf-8,Tanggal,Jurnal,Keterangan,Debit,Kredit,Nominal\n";
+        getFilteredTransactions().forEach(t => {
+            csv += `"${t.date}","${t.journalType}","${t.desc}","${t.debit}","${t.kredit}",${t.amount}\n`;
+        });
+        const link = document.createElement("a");
+        link.href = encodeURI(csv);
+        link.download = `Jurnal_Akuntansi.csv`;
+        link.click();
+    }
+
+    function renderPembiayaanDropdownNasabah() {
+        const select = document.getElementById('f-nasabah');
+        if(!select) return;
+        select.innerHTML = '<option value="">-- Pilih Nasabah --</option>';
+        nasabah.forEach(n => select.add(new Option(`[${n.rekening}] ${n.nama} (${n.kelas})`, n.id)));
+    }
+
+    function toggleAkadFields() {
+        const akad = document.getElementById('f-akad').value;
+        const labelMargin = document.getElementById('label-margin-bagi');
+        if(labelMargin) {
+            labelMargin.innerText = akad === 'Murabahah' ? "Margin Keuntungan (%)" : "Ekspektasi Bagi Hasil (%)";
+        }
+        hitungSimulasi();
+    }
+
+    function hitungSimulasi() {
+        const plafonEl = document.getElementById('f-plafon');
+        const marginEl = document.getElementById('f-margin');
+        const tenorEl = document.getElementById('f-tenor');
+        if(!plafonEl || !marginEl || !tenorEl) return;
+
+        const plafon = parseFloat(plafonEl.value) || 0;
+        const marginPersen = parseFloat(marginEl.value) || 0;
+        const tenor = parseInt(tenorEl.value) || 1;
+        let totalTagihan = plafon + (plafon * (marginPersen / 100) * (tenor / 12));
+        
+        const simTotal = document.getElementById('sim-total');
+        const simAngsuran = document.getElementById('sim-angsuran');
+        if(simTotal) simTotal.innerText = formatRP(totalTagihan);
+        if(simAngsuran) simAngsuran.innerText = formatRP(totalTagihan / tenor);
+    }
+
+    function simpanPembiayaan(e) {
+        e.preventDefault();
+        const date = document.getElementById('f-date').value;
+        const nasabahId = document.getElementById('f-nasabah').value;
+        const akad = document.getElementById('f-akad').value;
+        const plafon = parseFloat(document.getElementById('f-plafon').value) || 0;
+        const marginPersen = parseFloat(document.getElementById('f-margin').value) || 0;
+        const tenor = parseInt(document.getElementById('f-tenor').value) || 1;
+        const selNasabah = nasabah.find(n => n.id === nasabahId);
+
+        if(!selNasabah) return alert("Pilih nasabah terlebih dahulu!");
+
+        let totalTagihan = plafon + (plafon * (marginPersen / 100) * (tenor / 12));
+        pembiayaanList.push({
+            id: 'PMB' + Date.now(), date, nasabahNama: selNasabah.nama, nasabahRek: selNasabah.rekening,
+            akad, plafon, totalTagihan, angsuran: totalTagihan / tenor, status: 'Aktif'
+        });
+        localStorage.setItem('app_pembiayaan', JSON.stringify(pembiayaanList));
+        renderPembiayaan();
+        alert("Pembiayaan berhasil dicatat!");
+    }
+
+    function renderPembiayaan() {
+        const tbody = document.getElementById('table-pembiayaan');
+        if(!tbody) return;
+        tbody.innerHTML = pembiayaanList.length === 0 ? `<tr><td colspan="9" class="text-center" style="color:#64748b;">Belum ada data pembiayaan.</td></tr>` :
+        pembiayaanList.map((p, index) => `
+            <tr>
+                <td>${index + 1}</td><td>${p.date}</td><td><b>${p.nasabahNama}</b></td><td><span class="badge badge-warning">${p.akad}</span></td>
+                <td class="text-right">${formatRP(p.plafon)}</td><td class="text-right">${formatRP(p.totalTagihan)}</td>
+                <td class="text-right">${formatRP(p.angsuran)} /bln</td><td class="text-center"><span class="badge badge-success">${p.status}</span></td>
+                <td class="text-center no-print"><button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="hapusPembiayaan('${p.id}')">Hapus</button></td>
+            </tr>
+        `).join('');
+    }
+
+    function hapusPembiayaan(id) {
+        if(confirm("Hapus data pembiayaan ini?")) {
+            pembiayaanList = pembiayaanList.filter(p => p.id !== id);
+            localStorage.setItem('app_pembiayaan', JSON.stringify(pembiayaanList));
+            renderPembiayaan();
+        }
+    }
+</script>
+</body>
+</html>
